@@ -12,3 +12,8 @@ Revision history for Perl extension Apache::SimpleReplace.
 0.03  05.15.2000
         - corrected installation to install to a versioned
           directory (whoops)
+
+0.04  05.25.2000
+        - fixed bug in status checking when not using Apache::Filter
+        - return SERVER_ERROR if Apache::Filter or Apache::File
+          can't open the file

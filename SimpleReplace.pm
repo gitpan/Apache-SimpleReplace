@@ -17,7 +17,7 @@ use Apache::File;
 use Apache::Log;
 use strict;
 
-$Apache::SimpleReplace::VERSION = '0.03';
+$Apache::SimpleReplace::VERSION = '0.04';
 
 # set debug level
 #  0 - messages at info or debug log levels
@@ -75,16 +75,17 @@ sub handler {
     $log->info("\tgetting input from Apache::Filter")
       if $Apache::SimpleReplace::DEBUG;
     ($rqh, $status) = $r->filter_input;
+    undef $rqh unless $status == OK; 
   } else {
     $log->info("\tgetting input from requested Apache::File")
       if $Apache::SimpleReplace::DEBUG;
     $rqh = Apache::File->new($r->filename);
   }
 
-  if (!$rqh || $status ne OK) {
+  unless ($rqh) {
     $log->warn("\tcannot open request! $!");
     $log->info("Exiting Apache::SimpleReplace");
-    return DECLINED;
+    return SERVER_ERROR;
   }
 
   # output
