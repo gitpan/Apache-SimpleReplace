@@ -17,7 +17,7 @@ use Apache::File;
 use Apache::Log;
 use strict;
 
-$Apache::SimpleReplace::VERSION = '0.05';
+$Apache::SimpleReplace::VERSION = '0.06';
 
 # set debug level
 #  0 - messages at info or debug log levels
@@ -30,19 +30,26 @@ sub handler {
 #---------------------------------------------------------------------
   
   my $r         = shift;
+
+  my $filter       = $r->dir_config('Filter') || undef;
+
+  $r->log->info("Using Apache::SimpleReplace");
+
+  # redefine $r as necessary for Apache::Filter 1.013 and above
+  if (lc($filter) eq 'on') {
+    $r->server->log->info("\tregistering handler with Apache::Filter")
+       if $Apache::SimpleReplace::DEBUG;
+    $r = $r->filter_register;
+  }
+
   my $log       = $r->server->log;
 
   my $template  = $r->dir_config('TEMPLATE');
   my $replace   = $r->dir_config('REPLACE') || "|";
 
-  # make Apache::Filter aware
-  my $filter    = $r->dir_config('Filter') =~ m/On/i ? 1 : 0;
-
 #---------------------------------------------------------------------
 # do some preliminary stuff...
 #---------------------------------------------------------------------
-
-  $log->info("Using Apache::SimpleReplace");
 
   unless ($r->content_type eq 'text/html') {
     $log->info("\trequest is not for an html document - skipping...") 
@@ -67,54 +74,45 @@ sub handler {
     return SERVER_ERROR;
   }
 
-  # open the request handle
-  my $rqh;
-  my $status;
+  my ($rqh, $status);
 
+  # open the request handle
   if ($filter) {
     $log->info("\tgetting input from Apache::Filter")
       if $Apache::SimpleReplace::DEBUG;
     ($rqh, $status) = $r->filter_input;
-    undef $rqh unless $status == OK; 
+    undef $rqh unless $status == OK;     # just to be sure...
   } else {
-    $log->info("\tgetting input from requested Apache::File")
+    $log->info("\tgetting input from requested file")
       if $Apache::SimpleReplace::DEBUG;
     $rqh = Apache::File->new($r->filename);
   }
 
   unless ($rqh) {
-    $log->warn("\tcannot open request! $!");
+    $log->error("\tcannot open request! $!");
     $log->info("Exiting Apache::SimpleReplace");
     return SERVER_ERROR;
   }
 
-  # don't send headers if using Apache::Filter (it does it for you)
-  $r->send_http_header('text/html') unless $filter;
+  $r->send_http_header('text/html');
 
-  # output
+  # send output
   while (<$tph>) {
-
     if (/\Q$replace/) {
       $log->info("\t\'$replace\' found - replacing with request") 
         if $Apache::SimpleReplace::DEBUG;  
 
       my ($left, $right) = split /\Q$replace/;
   
-      # calling $r->print circumvents Apache::Filter, so use print
       print $left;            # output the left side of substitution
 
-      if ($filter) {
-        while(<$rqh>) {
-          print $_;           # output the requested file line by line
-        }
-      } else {                # if not using Apache::Filter, just dump 
-        $r->send_fd($rqh);    # the file for performance improvement
-      }
+      $r->send_fd($rqh);      # Apache::Filter > 1.013 overrides
+                              # send_fd()
 
       print $right;           # ouptut the right side of substitution
     }
     else {
-      print $_;               # print each template line
+      print;                  # print each template line
     }
   }
  
@@ -128,6 +126,7 @@ sub handler {
 }
 
 1;
+ 
 __END__
 
 =head1 NAME 
@@ -152,7 +151,10 @@ include the directive
   
   PerlSetVar Filter On
 
-and modify the PerlHandler directive accordingly...
+and modify the PerlHandler directive accordingly.  As of version
+0.06, Apache::SimpleReplace requires Apache::Filter 1.013 or
+better - users of Apache::Filter 1.011 or less should use version
+0.05.
 
 =head1 DESCRIPTION
 
@@ -185,8 +187,6 @@ several advantages.
   </html> 
 
  httpd.conf:
-
-  PerlModule Apache::Filter
 
   <Location /someplace>
      SetHandler perl-script
@@ -239,9 +239,9 @@ Geoffrey Young <geoff@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright 2000 Geoffrey Young - all rights reserved.
+Copyright (c) 2000, Geoffrey Young.  All rights reserved.
 
-This library is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+This module is free software.  It may be used, redistributed
+and/or modified under the same terms as Perl itself.
 
 =cut

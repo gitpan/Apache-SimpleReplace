@@ -1,16 +1,21 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
+#!perl
 
-######################### We start with some black magic to print on failure.
+print "1..2\n";
 
-# Change 1..1 below to 1..last_test_to_print .
-# (It may become useful if the test is moved to ./t subdirectory.)
+require 5.004;
+print "ok\n";
 
-print "no tests...\n";
+eval {
+  eval { require Apache::Filter; };
+  
+  exit 0 if $@;
+  die "\n\n\tI see you have Apache::Filter installed...
+\tIn order to use this version of Apache::SimpleReplace with
+\tApache::Filter you need to upgrade to Apache::Filter 1.013 or better.\n\n"
+     if $Apache::Filter::VERSION < 1.013;
+};
 
-######################### End of black magic.
+warn $@ if $@;
+print "ok\n";
 
-# Insert your test code below (better if it prints "ok 13"
-# (correspondingly "not ok 13") depending on the success of chunk 13
-# of the test code):
-
+exit 0;

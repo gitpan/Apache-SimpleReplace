@@ -20,3 +20,9 @@ Revision history for Perl extension Apache::SimpleReplace.
 
 0.05  05.31.2000
         - send headers when not using Apache::Filter
+
+0.06  11.06.2000
+        - make changes to fit in with Apache::Filter 1.013
+        - clean up output statements a bit
+        - changed warning to error for SERVER_ERROR
+        - modified pod
