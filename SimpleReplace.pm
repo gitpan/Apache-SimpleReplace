@@ -17,7 +17,7 @@ use Apache::File;
 use Apache::Log;
 use strict;
 
-$Apache::SimpleReplace::VERSION = '0.04';
+$Apache::SimpleReplace::VERSION = '0.05';
 
 # set debug level
 #  0 - messages at info or debug log levels
@@ -87,6 +87,9 @@ sub handler {
     $log->info("Exiting Apache::SimpleReplace");
     return SERVER_ERROR;
   }
+
+  # don't send headers if using Apache::Filter (it does it for you)
+  $r->send_http_header('text/html') unless $filter;
 
   # output
   while (<$tph>) {
@@ -198,7 +201,7 @@ Now, a request to http://localhost/someplace/foo.html will insert
 the contents of foo.html in place of "the content goes here" in the
 format1.html template and pass those results to Apache::SSI
 The result is a nice and tidy way to control any custom headers, 
-footers, background colors or images,  in a single html file.
+footers, background colors, or images in a single html file.
 
 =head1 NOTES
 

@@ -17,3 +17,6 @@ Revision history for Perl extension Apache::SimpleReplace.
         - fixed bug in status checking when not using Apache::Filter
         - return SERVER_ERROR if Apache::Filter or Apache::File
           can't open the file
+
+0.05  05.31.2000
+        - send headers when not using Apache::Filter
