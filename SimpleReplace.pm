@@ -3,7 +3,7 @@ package Apache::SimpleReplace;
 #---------------------------------------------------------------------
 #
 # usage: PerlHandler Apache::SimpleReplace
-#        PerlSetVar  TEMPLATE "/templ.html" # relative to server root
+#        PerlSetVar  TEMPLATE "/templates/templ.html"
 #        PerlSetVar  REPLACE  "|"              # character or string 
 #                                                defaults to "|"
 #        PerlSetVar  Filter On                 # optional - will work
@@ -17,12 +17,12 @@ use Apache::File;
 use Apache::Log;
 use strict;
 
-$Apache::SimpleReplace::VERSION = '0.01';
+$Apache::SimpleReplace::VERSION = '0.02';
 
 # set debug level
 #  0 - messages at info or debug log levels
 #  1 - verbose output at info or debug log levels
-$Apache::SimpleReplace::DEBUG = 1;
+$Apache::SimpleReplace::DEBUG = 0;
 
 sub handler {
 #---------------------------------------------------------------------
@@ -31,13 +31,12 @@ sub handler {
   
   my $r         = shift;
   my $log       = $r->server->log;
-  my $template  = $r->server_root_relative . $r->dir_config('TEMPLATE');
 
+  my $template  = $r->dir_config('TEMPLATE');
   my $replace   = $r->dir_config('REPLACE') || "|";
 
-  # make Apache::Filter aware using the 'Filter' 
-  # perl variable in httpd.conf
-  my $filter    = 1 ? $r->dir_config('Filter') =~ m/On/i : 0;
+  # make Apache::Filter aware
+  my $filter    = $r->dir_config('Filter') =~ m/On/i ? 1 : 0;
 
 #---------------------------------------------------------------------
 # do some preliminary stuff...
@@ -97,7 +96,7 @@ sub handler {
 
       my ($left, $right) = split /\Q$replace/;
   
-      # calling $r->print circumvents Apache::Filter, so just use print
+      # calling $r->print circumvents Apache::Filter, so use print
       print $left;            # output the left side of substitution
 
       if ($filter) {
@@ -129,61 +128,59 @@ __END__
 
 =head1 NAME 
 
-  Apache::SimpleReplace - a simple framework for creating
-                          uniform, template driven content.
+Apache::SimpleReplace - a simple template framework
 
 =head1 SYNOPSIS
 
-  httpd.conf:
+httpd.conf:
 
-  <Location /someplace>
-     SetHandler perl-script
-     PerlHandler Apache::SimpleReplace
+ <Location /someplace>
+    SetHandler perl-script
+    PerlHandler Apache::SimpleReplace
 
-     PerlSetVar  TEMPLATE "templates/format1.html"
-     PerlSetVar  REPLACE "the content goes here"
-  </Location>  
+    PerlSetVar  TEMPLATE "/templates/format1.html"
+    PerlSetVar  REPLACE "the content goes here"
+ </Location>  
 
-  Apache::SimpleReplace is Filter aware, meaning that it can be used
-  within an Apache::Filter framework without modification.  Just
-  include the directive
+Apache::SimpleReplace is Filter aware, meaning that it can be used
+within an Apache::Filter framework without modification.  Just
+include the directive
   
   PerlSetVar Filter On
 
-  and modify the PerlHandler directive accordingly...
+and modify the PerlHandler directive accordingly...
 
 =head1 DESCRIPTION
 
-  Apache::SimpleReplace provides a simple way to insert content within
-  an established template for uniform content delivery.  While the end
-  result is similar toApache::Sandwich, Apache::SimpleReplace offers
-  several advantages.
+Apache::SimpleReplace provides a simple way to insert content within
+an established template for uniform content delivery.  While the end
+result is similar to Apache::Sandwich, Apache::SimpleReplace offers
+several advantages.
 
-  It does not use separate header and footer files, easing the pain of
-  maintaining syntactically correct HTML in seperate files.
+  o It does not use separate header and footer files, easing the
+    pain of maintaining syntactically correct HTML in seperate files.
 
-  It is Apache::Filter aware, thus it can both accept content from
-  other content handlers as well as pass its changes on to others
-  later in the chain.
+  o It is Apache::Filter aware, thus it can both accept content from
+    other content handlers as well as pass its changes on to others
+    later in the chain.
 
 =head1 EXAMPLE
 
-  /usr/local/apache/templates/format1.html:
+/usr/local/apache/templates/format1.html:
 
-   <html>
-        <head><title>your template</title></head>
-                <title>your template</title>
-        <body bgcolor="#778899">
-                some headers, banners, whatever...
-                <p>
-   the content goes here
-                </p>
-                <p>some footers, modification dates, whatever...
-        </body>
-   </html> 
+  <html>
+      <head><title>your template</title></head>
+              <title>your template</title>
+      <body bgcolor="#778899">
+              some headers, banners, whatever...
+              <p>
+  the content goes here
+              </p>
+              <p>some footers, modification dates, whatever...
+      </body>
+  </html> 
 
-
-  httpd.conf:
+ httpd.conf:
 
   PerlModule Apache::Filter
 
@@ -196,53 +193,51 @@ __END__
      PerlSetVar  Filter On
   </Location>
 
-  Now, a request to http://localhost/someplace/foo.html will insert
-  the contents of foo.html in place of "the content goes here" in the
-  format1.html template and pass those results to 
-  Custom::SomeOtherHandler.  The result is a nice and tidy way to 
-  control any custom headers, footers, background colors or images,
-  in a single html file.
+Now, a request to http://localhost/someplace/foo.html will insert
+the contents of foo.html in place of "the content goes here" in the
+format1.html template and pass those results to Apache::SSI
+The result is a nice and tidy way to control any custom headers, 
+footers, background colors or images,  in a single html file.
 
 =head1 NOTES
 
-  TEMPLATE is relative to the ServerRoot - this may change in future 
-  releases, depending on demand.
+As of 0.02, TEMPLATE is no longer relative to the ServerRoot.
 
-  REPLACE defaults to "|", though it may be any character or string
-  you like - metacharacters are disabled in the search, so sorry, no 
-  regex for now... 
+REPLACE defaults to "|", though it may be any character or string
+you like - metacharacters are disabled in the search, so sorry, no 
+regex for now... 
  
-  Verbose debugging is enabled by setting 
-  $Apache::SimpleReplace::DEBUG=1 or greater.  To turn off all debug
-  information, set your apache LogLevel directive above info level.
+Verbose debugging is enabled by setting
+$Apache::SimpleReplace::DEBUG=1 or greater.  To turn off all debug
+information, set your apache LogLevel directive above info level.
 
-  This is alpha software, and as such has not been tested on multiple
-  platforms or environments.  It requires PERL_LOG_API=1, 
-  PERL_FILE_API=1, and maybe other hooks to function properly.
+This is alpha software, and as such has not been tested on multiple
+platforms or environments.  It requires PERL_LOG_API=1, 
+PERL_FILE_API=1, and maybe other hooks to function properly.
 
 =head1 FEATURES/BUGS
 
-  If Apache::SimpleReplace finds more than one match for REPLACE in
-  the template, it will insert the request for the first occurrence
-  only.  All other replacement strings will just be stripped from the 
-  template.
+If Apache::SimpleReplace finds more than one match for REPLACE in
+the template, it will insert the request for the first occurrence
+only.  All other replacement strings will just be stripped from the
+template.
 
-  Currently, Apache::SimpleReplace will return DECLINED if the
-  content-type of the request is not 'text/html'.
+Currently, Apache::SimpleReplace will return DECLINED if the
+content-type of the request is not 'text/html'.
 
 =head1 SEE ALSO
 
-  perl(1), mod_perl(3), Apache(3), Apache::Filter(3)
+perl(1), mod_perl(3), Apache(3), Apache::Filter(3)
 
 =head1 AUTHOR
 
-  Geoffrey Young <geoff@cpan.org>
+Geoffrey Young <geoff@cpan.org>
 
 =head1 COPYRIGHT
 
-  Copyright 2000 Geoffrey Young - all rights reserved.
+Copyright 2000 Geoffrey Young - all rights reserved.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the same terms as Perl itself.
+This library is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut

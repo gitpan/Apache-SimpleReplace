@@ -4,4 +4,7 @@ Revision history for Perl extension Apache::SimpleReplace.
 	- original version
         - actually a rename of (the now obsolete) Apache::Wrapper_0.02
 
-
+0.02  05.08.2000
+	- fixed embarassing parsing of Filter PerlSetVar (whoops)
+	- TEMPLATE is no longer relative to server root
+        - minor pod changes
