@@ -8,3 +8,7 @@ Revision history for Perl extension Apache::SimpleReplace.
 	- fixed embarassing parsing of Filter PerlSetVar (whoops)
 	- TEMPLATE is no longer relative to server root
         - minor pod changes
+
+0.03  05.15.2000
+        - corrected installation to install to a versioned
+          directory (whoops)

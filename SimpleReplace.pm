@@ -17,7 +17,7 @@ use Apache::File;
 use Apache::Log;
 use strict;
 
-$Apache::SimpleReplace::VERSION = '0.02';
+$Apache::SimpleReplace::VERSION = '0.03';
 
 # set debug level
 #  0 - messages at info or debug log levels
